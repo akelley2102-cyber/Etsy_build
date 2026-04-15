@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,900;1,300;1,600&family=Epilogue:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F0EBF8;
+  --surface: #FAFAF7;
+  --ink: #1C1228;
+  --plum: #4A1C6F;
+  --violet: #7C3AED;
+  --lavender: #C4B5FD;
+  --mint: #10B981;
+  --rose: #F43F5E;
+  --amber: #F59E0B;
+  --border: #DDD6F3;
+  --muted: #8B7BA8;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Epilogue', sans-serif;
+  min-height: 100vh;
+}
+
+/* Mesh background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(244,63,94,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(16,185,129,0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+* { position: relative; z-index: 1; }
+
+header {
+  background: var(--plum);
+  padding: 22px 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+.logo span { color: var(--lavender); font-style: italic; }
+
+.api-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  transition: background 0.2s;
+}
+
+.api-pill:hover { background: rgba(255,255,255,0.18); }
+
+.api-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+}
+
+.api-dot.on { background: #4ADE80; box-shadow: 0 0 8px #4ADE80; }
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 44px 40px;
+}
+
+/* Input card */
+.input-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(74,28,111,0.08);
+  padding: 36px;
+  margin-bottom: 36px;
+}
+
+.input-card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.input-card-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.field-input, .field-textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+  font-family: 'Epilogue', sans-serif;
+  font-size: 0.82rem;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 2px;
+}
+
+.field-input:focus, .field-textarea:focus { border-color: var(--violet); }
+.field-input::placeholder, .field-textarea::placeholder { color: var(--muted); opacity: 0.6; }
+.field-textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+
+/* Platform selector */
+.platform-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.platform-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.platform-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+  font-family: 'Epilogue', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+
+.platform-btn:hover { border-color: var(--violet); color: var(--ink); }
+
+.platform-btn.active {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: white;
+}
+
+.platform-icon { font-size: 1rem; }
+
+.generate-btn {
+  background: var(--violet);
+  color: white;
+  border: none;
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: italic;
+  padding: 15px 36px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: -0.01em;
+  border-radius: 2px;
+  width: 100%;
+}
+
+.generate-btn:hover { background: var(--plum); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.3); }
+.generate-btn:disabled { background: var(--border); color: var(--muted); transform: none; box-shadow: none; cursor: not-allowed; }
+
+/* Results */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.results-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.results-meta {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* Platform section */
+.platform-section {
+  margin-bottom: 28px;
+  animation: riseUp 0.4s ease both;
+}
+
+@keyframes riseUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.platform-section:nth-child(1) { animation-delay: 0.05s; }
+.platform-section:nth-child(2) { animation-delay: 0.15s; }
+.platform-section:nth-child(3) { animation-delay: 0.25s; }
+.platform-section:nth-child(4) { animation-delay: 0.35s; }
+
+.platform-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--plum);
+  color: white;
+}
+
+.platform-header-icon { font-size: 1.1rem; }
+
+.platform-header-name {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.platform-header-sub {
+  font-size: 0.62rem;
+  opacity: 0.6;
+  letter-spacing: 0.08em;
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.content-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-top: none;
+}
+
+.content-card {
+  background: var(--surface);
+  padding: 20px;
+  transition: background 0.15s;
+}
+
+.content-card:hover { background: white; }
+
+.content-card.full { grid-column: 1 / -1; }
+
+.card-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Epilogue', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+
+.copy-btn:hover { border-color: var(--violet); color: var(--violet); }
+.copy-btn.ok { border-color: var(--mint); color: var(--mint); }
+
+.card-text {
+  font-size: 0.8rem;
+  line-height: 1.75;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.card-text.headline {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hashtag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hashtag {
+  background: var(--bg);
+  border: 1px solid var(--lavender);
+  color: var(--violet);
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* Loading */
+.loading-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 48px;
+  text-align: center;
+}
+
+.loading-icon {
+  font-size: 2rem;
+  margin-bottom: 14px;
+  animation: bounce 1.2s ease infinite;
+}
+
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.loading-text {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--plum);
+  margin-bottom: 6px;
+}
+
+.loading-sub { font-size: 0.72rem; color: var(--muted); }
+
+/* Empty state */
+.empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 64px 40px;
+  text-align: center;
+}
+
+.empty-icon { font-size: 2.8rem; margin-bottom: 16px; }
+
+.empty-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--plum);
+}
+
+.empty-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(28,18,40,0.7);
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(74,28,111,0.2);
+  padding: 40px;
+  width: 420px;
+  max-width: 90vw;
+  border-radius: 2px;
+}
+
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--plum);
+}
+
+.modal-sub { font-size: 0.72rem; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+
+.modal-input {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+  font-family: 'Epilogue', sans-serif;
+  font-size: 0.78rem;
+  padding: 12px 14px;
+  outline: none;
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: 2px;
+}
+
+.modal-input:focus { border-color: var(--violet); }
+
+.modal-btn {
+  background: var(--violet);
+  color: white;
+  border: none;
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-style: italic;
+  padding: 13px;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.modal-btn:hover { background: var(--plum); }
+
+@media (max-width: 640px) {
+  .page { padding: 24px 20px; }
+  header { padding: 18px 20px; }
+  .input-row { grid-template-columns: 1fr; }
+  .content-cards { grid-template-columns: 1fr; }
+  .input-card { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Content <span>Agent</span></div>
+  <div class="api-pill" onclick="openModal()">
+    <div class="api-dot" id="apiDot"></div>
+    <span id="apiStatus">Connect API</span>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="input-card">
+    <div class="input-card-title">Generate traffic content for your Etsy listing</div>
+    <div class="input-card-sub">Paste your product details and get ready-to-post content for Pinterest, Instagram, email, and more.</div>
+
+    <div class="input-row">
+      <div class="field">
+        <div class="field-label">Product Name</div>
+        <input class="field-input" id="productInput" type="text" placeholder="e.g. Minimalist Weekly Planner Printable" />
+      </div>
+      <div class="field">
+        <div class="field-label">Target Audience</div>
+        <input class="field-input" id="audienceInput" type="text" placeholder="e.g. Busy moms, students, remote workers" />
+      </div>
+    </div>
+
+    <div class="input-row" style="margin-bottom:20px">
+      <div class="field">
+        <div class="field-label">Key Benefit / Hook</div>
+        <input class="field-input" id="hookInput" type="text" placeholder="e.g. Save 2 hours every Monday morning" />
+      </div>
+      <div class="field">
+        <div class="field-label">Etsy Listing URL (optional)</div>
+        <input class="field-input" id="urlInput" type="text" placeholder="https://etsy.com/listing/..." />
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div class="platform-label">Generate content for:</div>
+      <div class="platform-row" id="platformRow">
+        <button class="platform-btn active" data-p="pinterest" onclick="togglePlatform(this)"><span class="platform-icon">📌</span> Pinterest</button>
+        <button class="platform-btn active" data-p="instagram" onclick="togglePlatform(this)"><span class="platform-icon">📸</span> Instagram</button>
+        <button class="platform-btn active" data-p="email" onclick="togglePlatform(this)"><span class="platform-icon">📧</span> Email</button>
+        <button class="platform-btn" data-p="tiktok" onclick="togglePlatform(this)"><span class="platform-icon">🎵</span> TikTok</button>
+        <button class="platform-btn" data-p="facebook" onclick="togglePlatform(this)"><span class="platform-icon">👥</span> Facebook</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="genBtn" onclick="generate()">Generate Content →</button>
+  </div>
+
+  <div id="resultsArea">
+    <div class="empty">
+      <div class="empty-icon">✨</div>
+      <div class="empty-title">Your content will appear here</div>
+      <div class="empty-sub">Fill in your product details above and select which platforms you want content for.<br>The agent will write tailored posts, captions, and copy in seconds.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- API Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="outsideClose(event)">
+  <div class="modal">
+    <div class="modal-title">Connect your API key</div>
+    <div class="modal-sub">Enter your Anthropic API key to power the content agent. Stored in your browser only — never sent anywhere else.</div>
+    <input class="modal-input" type="password" id="modalInput" placeholder="sk-ant-..." />
+    <button class="modal-btn" onclick="saveKey()">Connect →</button>
+  </div>
+</div>
+
+<script>
+let apiKey = localStorage.getItem('content_agent_key') || '';
+let activePlatforms = new Set(['pinterest', 'instagram', 'email']);
+
+function init() {
+  updateApiUI();
+  if (!apiKey) openModal();
+}
+
+function updateApiUI() {
+  document.getElementById('apiDot').className = 'api-dot' + (apiKey ? ' on' : '');
+  document.getElementById('apiStatus').textContent = apiKey ? 'API Connected' : 'Connect API';
+}
+
+function openModal() { document.getElementById('modalOverlay').classList.add('show'); }
+function outsideClose(e) { if (e.target.id === 'modalOverlay') document.getElementById('modalOverlay').classList.remove('show'); }
+
+function saveKey() {
+  const v = document.getElementById('modalInput').value.trim();
+  if (v.startsWith('sk-')) {
+    apiKey = v;
+    localStorage.setItem('content_agent_key', v);
+    document.getElementById('modalOverlay').classList.remove('show');
+    updateApiUI();
+  } else {
+    alert('Please enter a valid Anthropic API key (starts with sk-)');
+  }
+}
+
+function togglePlatform(btn) {
+  const p = btn.dataset.p;
+  if (activePlatforms.has(p)) {
+    if (activePlatforms.size === 1) return; // keep at least one
+    activePlatforms.delete(p);
+    btn.classList.remove('active');
+  } else {
+    activePlatforms.add(p);
+    btn.classList.add('active');
+  }
+}
+
+const PLATFORM_META = {
+  pinterest: { icon: '📌', label: 'Pinterest', sub: 'Pin title + description' },
+  instagram: { icon: '📸', label: 'Instagram', sub: 'Caption + hashtags' },
+  email: { icon: '📧', label: 'Email', sub: 'Subject lines + preview text' },
+  tiktok: { icon: '🎵', label: 'TikTok', sub: 'Script hook + caption' },
+  facebook: { icon: '👥', label: 'Facebook', sub: 'Post copy' },
+};
+
+async function generate() {
+  const product = document.getElementById('productInput').value.trim();
+  const audience = document.getElementById('audienceInput').value.trim();
+  const hook = document.getElementById('hookInput').value.trim();
+  const url = document.getElementById('urlInput').value.trim();
+
+  if (!product) { alert('Please enter a product name.'); return; }
+  if (!apiKey) { openModal(); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+
+  document.getElementById('resultsArea').innerHTML = `
+    <div class="loading-card">
+      <div class="loading-icon">✍️</div>
+      <div class="loading-text">Writing your content...</div>
+      <div class="loading-sub">Crafting posts for ${[...activePlatforms].join(', ')}</div>
+    </div>`;
+
+  const platforms = [...activePlatforms];
+
+  const platformInstructions = {
+    pinterest: `"pinterest": {
+      "pin_title": "...",  // 60-100 chars, keyword-rich
+      "pin_description": "...",  // 150-200 chars, storytelling + CTA
+      "board_suggestion": "..."  // best Pinterest board name to save to
+    }`,
+    instagram: `"instagram": {
+      "caption": "...",  // 150-220 chars, engaging opener + story + CTA
+      "hashtags": ["...", "..."]  // exactly 15 relevant hashtags, no #
+    }`,
+    email: `"email": {
+      "subject_lines": ["...", "...", "..."],  // 3 subject line variants (curiosity, benefit, urgency)
+      "preview_text": "..."  // 80-100 chars preview/preheader text
+    }`,
+    tiktok: `"tiktok": {
+      "hook": "...",  // first 3 seconds spoken hook (1 punchy sentence)
+      "script_outline": "...",  // 3-step 30-second video outline
+      "caption": "..."  // short TikTok caption + 3-5 hashtags
+    }`,
+    facebook: `"facebook": {
+      "post": "...",  // 100-150 chars casual facebook post copy
+      "cta": "..."  // call to action line
+    }`
+  };
+
+  const selectedInstructions = platforms.map(p => platformInstructions[p]).join(',\n');
+
+  const prompt = `You are a social media expert specializing in Etsy digital product marketing.
+
+Product: ${product}
+Target audience: ${audience || 'general shoppers'}
+Key benefit/hook: ${hook || 'solves a common problem'}
+${url ? `Listing URL: ${url}` : ''}
+
+Create scroll-stopping social media content to drive traffic to this Etsy listing. Be specific, evocative, and speak directly to the buyer's desires and pain points. Avoid generic phrases like "check it out" or "perfect for everyone".
+
+Respond ONLY with valid JSON, no markdown, no backticks:
+{
+  ${selectedInstructions}
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'API error');
+    }
+
+    const data = await res.json();
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    renderResults(result, product);
+
+  } catch (err) {
+    document.getElementById('resultsArea').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Something went wrong</div>
+        <div class="empty-sub">${err.message}</div>
+      </div>`;
+  }
+
+  btn.disabled = false;
+}
+
+function renderResults(data, product) {
+  let html = `
+    <div class="results-header">
+      <div class="results-title">Content for: ${product}</div>
+      <div class="results-meta">${Object.keys(data).length} platform${Object.keys(data).length > 1 ? 's' : ''} generated</div>
+    </div>`;
+
+  if (data.pinterest) {
+    html += platformSection('📌', 'Pinterest', 'Drives organic traffic for months', [
+      { label: 'Pin Title', text: data.pinterest.pin_title, cls: 'headline' },
+      { label: 'Pin Description', text: data.pinterest.pin_description },
+      { label: 'Best Board to Save To', text: '📁 ' + data.pinterest.board_suggestion },
+    ]);
+  }
+
+  if (data.instagram) {
+    const tagsHtml = data.instagram.hashtags
+      .map(t => `<span class="hashtag">#${t.replace(/^#/, '')}</span>`).join('');
+    html += platformSection('📸', 'Instagram', 'Caption + 15 hashtags', [
+      { label: 'Caption', text: data.instagram.caption },
+      { label: 'Hashtags', html: `<div class="hashtag-cloud">${tagsHtml}</div>`, copyText: data.instagram.hashtags.map(t=>'#'+t.replace(/^#/,'')).join(' ') },
+    ]);
+  }
+
+  if (data.email) {
+    const subLines = data.email.subject_lines.map((s,i)=>`${i+1}. ${s}`).join('\n');
+    html += platformSection('📧', 'Email', 'Subject lines + preview text', [
+      { label: '3 Subject Line Variants', text: subLines },
+      { label: 'Preview / Preheader Text', text: data.email.preview_text },
+    ]);
+  }
+
+  if (data.tiktok) {
+    html += platformSection('🎵', 'TikTok', '30-second video content', [
+      { label: 'Opening Hook (first 3 sec)', text: data.tiktok.hook, cls: 'headline' },
+      { label: 'Video Script Outline', text: data.tiktok.script_outline },
+      { label: 'Caption', text: data.tiktok.caption },
+    ]);
+  }
+
+  if (data.facebook) {
+    html += platformSection('👥', 'Facebook', 'Post copy', [
+      { label: 'Post', text: data.facebook.post },
+      { label: 'Call to Action', text: data.facebook.cta },
+    ]);
+  }
+
+  document.getElementById('resultsArea').innerHTML = html;
+}
+
+function platformSection(icon, name, sub, items) {
+  const twoCol = items.length >= 2 && items.every(i => !i.html);
+
+  let cardsHtml = '';
+  items.forEach((item, idx) => {
+    const isFull = items.length === 1 || (!twoCol);
+    const cls = isFull ? 'content-card full' : 'content-card';
+    const copyTarget = item.copyText || item.text || '';
+    const textHtml = item.html
+      ? item.html
+      : `<div class="card-text ${item.cls || ''}">${item.text}</div>`;
+
+    cardsHtml += `
+      <div class="${cls}">
+        <div class="card-label">
+          <span>${item.label}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${escapeBacktick(copyTarget)}\`)">Copy</button>
+        </div>
+        ${textHtml}
+      </div>`;
+  });
+
+  return `
+    <div class="platform-section">
+      <div class="platform-header">
+        <span class="platform-header-icon">${icon}</span>
+        <span class="platform-header-name">${name}</span>
+        <span class="platform-header-sub">${sub}</span>
+      </div>
+      <div class="content-cards">${cardsHtml}</div>
+    </div>`;
+}
+
+function escapeBacktick(str) {
+  return (str || '').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+document.getElementById('modalInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
+
+init();
+</script>
+</body>
+</html>
