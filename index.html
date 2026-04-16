@@ -128,6 +128,8 @@ flex-shrink: 0;
 .empty-sub { font-size:0.72rem; }
 .use-niche-btn { margin-top:14px; width:100%; background:var(–rust); color:white; border:none; font-family:‘DM Mono’,monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:10px; cursor:pointer; transition:background 0.2s; }
 .use-niche-btn:hover { background:var(–shadow); }
+.use-listing-btn { margin-top:16px; width:100%; background:var(–plum); color:white; border:none; font-family:‘DM Mono’,monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:12px; cursor:pointer; transition:background 0.2s; }
+.use-listing-btn:hover { background:var(–ink); }
 
 /* ── TOOL 2: LISTING WRITER ── */
 .listing-layout { display:grid; grid-template-columns:340px 1fr; min-height:calc(100vh - 65px); gap:0; }
@@ -552,10 +554,23 @@ function renderListing(l, name) {
     scoreRow('Title SEO', scores.title_seo||7) + scoreRow('Description', scores.description_seo||7) + scoreRow('Tags SEO', scores.tags_seo||7) +
     '<div class="tip-line">💡 '+(l.tip||'')+'</div></div>';
 
+  html += '<button class="use-listing-btn" id="use-listing-btn">Use this listing → Content Agent</button>';
+
   document.getElementById('l-results').innerHTML = html;
   document.getElementById('l-out-title').textContent = name;
   document.getElementById('l-copy-all').classList.add('show');
   setTimeout(()=>{ document.querySelectorAll('.score-fill').forEach(b=>{ b.style.width=b.dataset.w; }); }, 80);
+
+  document.getElementById('use-listing-btn').addEventListener('click', function() {
+    document.getElementById('c-product').value = name;
+    document.getElementById('c-audience').value = document.getElementById('l-buyer').value || '';
+    document.getElementById('c-hook').value = (lastListing.bullets && lastListing.bullets[0]) ? lastListing.bullets[0] : '';
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-content').classList.add('active');
+    document.querySelectorAll('.nav-tab')[2].classList.add('active');
+    window.scrollTo(0, 0);
+  });
 }
 
 function outSection(label, id, text, cls) {
