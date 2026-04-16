@@ -398,18 +398,15 @@ function saveKey() {
 }
 document.getElementById('modal-key').addEventListener('keydown', e => { if(e.key==='Enter') saveKey(); });
 
-function useNiche(n) {
-  // Fill listing writer fields
-  document.getElementById('l-product').value = n.name;
-  document.getElementById('l-buyer').value = 'Etsy shoppers interested in ' + n.name.toLowerCase();
-  document.getElementById('l-features').value = n.products.join(', ');
-  document.getElementById('l-price').value = n.price.split('–')[0].trim();
-  // Switch to listing tab
+function useNicheBtn(btn) {
+  document.getElementById('l-product').value = btn.dataset.name || '';
+  document.getElementById('l-buyer').value = btn.dataset.buyer || '';
+  document.getElementById('l-features').value = btn.dataset.features || '';
+  document.getElementById('l-price').value = btn.dataset.price || '';
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-listing').classList.add('active');
   document.querySelectorAll('.nav-tab')[1].classList.add('active');
-  // Scroll to top
   window.scrollTo(0, 0);
 }
 
@@ -490,7 +487,12 @@ function renderNiches(data, query) {
     '<span class="meta-tag price">💰 '+n.price+'</span></div>' +
     '<div class="product-ideas"><div class="product-ideas-label">Product ideas</div>' +
     '<div class="product-idea-list">'+n.products.map(p=>'→ '+p).join('<br>')+'</div></div>' +
-    '<button class="use-niche-btn" onclick="useNiche('+JSON.stringify(n)+')">Use this niche → Listing Writer</button>' +
+    '<button class="use-niche-btn" ' +
+    'data-name="'+n.name.replace(/"/g,'&quot;')+'" ' +
+    'data-buyer="Etsy shoppers interested in '+n.name.toLowerCase().replace(/"/g,'&quot;')+'" ' +
+    'data-features="'+n.products.join(', ').replace(/"/g,'&quot;')+'" ' +
+    'data-price="'+n.price.split('–')[0].trim()+'" ' +
+    'onclick="useNicheBtn(this)">Use this niche → Listing Writer</button>' +
     '</div>'
   ).join('');
   const summary = '<div class="summary-card"><div class="summary-label">Strategic Take</div><div class="summary-text">'+data.summary+'</div></div>';
