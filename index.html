@@ -706,7 +706,11 @@ function setFilter(el) {
 async function runHunter() {
   const query = document.getElementById('h-query').value.trim();
   if (!query) { alert('Enter a keyword first!'); return; }
-  if (!API_KEY) { openModal(); return; }
+  if (!API_KEY) { 
+    document.getElementById('h-status').textContent = 'No API key — tap Connect API to add yours.';
+    openModal(); 
+    return; 
+  }
   const btn = document.getElementById('h-btn');
   btn.disabled = true;
   document.getElementById('h-spin').classList.add('active');
@@ -723,12 +727,22 @@ async function runHunter() {
     renderNiches(data, query);
     document.getElementById('h-status').textContent = 'Found ' + data.niches.length + ' niches for "' + query + '"';
   } catch(err) {
-    document.getElementById('h-status').textContent = 'Error — ' + err.message.slice(0,60);
+    document.getElementById('h-status').textContent = 'Error — ' + err.message.slice(0,80);
     document.getElementById('h-results').innerHTML = errHTML(err.message);
+    console.error('Hunter error:', err);
   }
   btn.disabled = false;
   document.getElementById('h-spin').classList.remove('active');
 }
+
+// On load, show API key status in status bar
+window.addEventListener('load', function() {
+  if (!API_KEY) {
+    document.getElementById('h-status').textContent = 'No API key yet — tap Connect API in the top right.';
+  } else {
+    document.getElementById('h-status').textContent = 'Ready. Enter a keyword above.';
+  }
+});
 
 function renderNiches(data, query) {
   const dc = d => d==='High'?'demand':d==='Medium'?'price':'competition';
