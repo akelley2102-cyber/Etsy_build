@@ -130,6 +130,9 @@ flex-shrink: 0;
 .use-niche-btn:hover { background:var(–shadow); }
 .use-listing-btn { margin-top:16px; width:100%; background:var(–plum); color:white; border:none; font-family:‘DM Mono’,monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:12px; cursor:pointer; transition:background 0.2s; }
 .use-listing-btn:hover { background:var(–ink); }
+.publish-etsy-btn { margin-top:8px; width:100%; background:#F1641E; color:white; border:none; font-family:‘DM Mono’,monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:12px; cursor:pointer; transition:background 0.2s; }
+.publish-etsy-btn:hover { background:#d4521a; }
+.publish-etsy-btn:disabled { opacity:0.6; cursor:not-allowed; }
 
 /* ── TOOL 2: LISTING WRITER ── */
 .listing-layout { display:grid; grid-template-columns:340px 1fr; min-height:calc(100vh - 65px); gap:0; }
@@ -244,10 +247,16 @@ flex-shrink: 0;
 <header class="app-header">
   <div class="header-top">
     <div class="app-logo">Etsy <span>Toolkit</span></div>
-    <div class="api-area" onclick="openModal()">
-      <div class="api-dot" id="apiDot"></div>
-      <span class="api-area-text" id="apiStatus">Connect API</span>
-    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+
+```
+  <div class="api-area" onclick="openModal()">
+    <div class="api-dot" id="apiDot"></div>
+    <span class="api-area-text" id="apiStatus">Connect API</span>
+  </div>
+</div>
+```
+
   </div>
   <nav class="nav-tabs">
     <button class="nav-tab active" onclick="showPanel('hunter', event)"><span class="tab-num">01</span> Niche Hunter</button>
@@ -363,6 +372,9 @@ flex-shrink: 0;
 <script>
 // ── STATE ──
 let API_KEY = localStorage.getItem('etsy_toolkit_key') || '';
+let BACKEND_URL = localStorage.getItem('etsy_backend_url') || '';
+let etsyToken = localStorage.getItem('etsy_access_token') || '';
+let etsyShopId = localStorage.getItem('etsy_shop_id') || '';
 let hunterFilter = 'all';
 let listingTone = 'warm & friendly';
 let activePlats = new Set(['pinterest','instagram','email']);
@@ -399,6 +411,111 @@ function saveKey() {
   } else { alert('Please enter a valid Anthropic API key (starts with sk-)'); }
 }
 document.getElementById('modal-key').addEventListener('keydown', e => { if(e.key==='Enter') saveKey(); });
+
+// ── ETSY CONNECT ──
+function updateEtsyUI() {
+  const dot = document.getElementById('etsyDot');
+  const status = document.getElementById('etsyStatus');
+  if (etsyToken && etsyShopId) {
+    dot.classList.add('on');
+    status.textContent = 'Etsy Connected';
+  } else {
+    dot.classList.remove('on');
+    status.textContent = 'Connect Etsy';
+  }
+}
+
+function connectEtsy() {
+  if (etsyToken && etsyShopId) {
+    if (confirm('Disconnect Etsy?')) {
+      etsyToken = ''; etsyShopId = '';
+      localStorage.removeItem('etsy_access_token');
+      localStorage.removeItem('etsy_shop_id');
+      updateEtsyUI();
+    }
+    return;
+  }
+  if (!BACKEND_URL) {
+    const url = prompt('Enter your Railway backend URL (e.g. https://etsy-toolkit.up.railway.app):');
+    if (!url) return;
+    BACKEND_URL = url.replace(/\/+$/, '');
+    localStorage.setItem('etsy_backend_url', BACKEND_URL);
+  }
+  // Open OAuth popup
+  fetch(BACKEND_URL + '/auth/start')
+    .then(r => r.json())
+    .then(data => {
+      const popup = window.open(data.url, 'etsy_auth', 'width=600,height=700');
+      // Listen for postMessage from callback page
+      window.addEventListener('message', async function handler(e) {
+        if (e.data && e.data.type === 'etsy_auth') {
+          window.removeEventListener('message', handler);
+          // Get token
+          const tr = await fetch(BACKEND_URL + '/auth/token?state=' + e.data.state);
+          const td = await tr.json();
+          if (!td.access_token) { alert('Auth failed — no token returned'); return; }
+          etsyToken = td.access_token;
+          localStorage.setItem('etsy_access_token', etsyToken);
+          // Get shop ID
+          const sr = await fetch(BACKEND_URL + '/shop', { headers: { Authorization: 'Bearer ' + etsyToken } });
+          const sd = await sr.json();
+          etsyShopId = sd.shop_id;
+          localStorage.setItem('etsy_shop_id', etsyShopId);
+          updateEtsyUI();
+          alert('✅ Etsy shop connected!');
+        }
+      });
+    })
+    .catch(err => alert('Could not reach backend: ' + err.message));
+}
+
+// ── PUBLISH TO ETSY VIA LATENODE ──
+const LATENODE_WEBHOOK = 'https://webhook.latenode.com/96711/dev/cce5aa83-385a-4017-b5ee-5ebd37f0f104';
+
+async function publishToEtsy(productName) {
+  if (!lastListing) { alert('No listing generated yet.'); return; }
+
+  const btn = document.getElementById('publish-etsy-btn');
+  btn.textContent = '⏳ Sending to Etsy...';
+  btn.disabled = true;
+
+  const fullDesc = lastListing.description + '\n\n' + (lastListing.bullets || []).map(b => '• ' + b).join('\n');
+  const price = document.getElementById('l-price').value || '4.99';
+
+  const payload = {
+    title: lastListing.title,
+    description: fullDesc,
+    price: price.replace(/[^0-9.]/g, ''),
+    tags: (lastListing.tags || []).slice(0, 13),
+    bullets: lastListing.bullets || [],
+    product: productName
+  };
+
+  try {
+    const resp = await fetch(LATENODE_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) throw new Error('Webhook returned ' + resp.status);
+
+    btn.textContent = '✅ Sent to Latenode!';
+    btn.style.background = 'var(--sage)';
+
+    const note = document.createElement('div');
+    note.style.cssText = 'margin-top:10px;font-size:0.72rem;line-height:1.6;color:var(--ink);opacity:0.7;';
+    note.textContent = '→ Latenode is creating your Etsy listing. Check your Etsy shop in a moment.';
+    btn.parentNode.insertBefore(note, btn.nextSibling);
+
+  } catch(err) {
+    btn.textContent = '🛍 Publish Directly to Etsy';
+    btn.disabled = false;
+    alert('Failed to reach Latenode: ' + err.message);
+  }
+}
+
+updateEtsyUI();
 
 function useNicheBtn(btn) {
   document.getElementById('l-product').value = btn.dataset.name || '';
@@ -555,6 +672,7 @@ function renderListing(l, name) {
     '<div class="tip-line">💡 '+(l.tip||'')+'</div></div>';
 
   html += '<button class="use-listing-btn" id="use-listing-btn">Use this listing → Content Agent</button>';
+  html += '<button class="publish-etsy-btn" id="publish-etsy-btn">🛍 Publish Directly to Etsy</button>';
 
   document.getElementById('l-results').innerHTML = html;
   document.getElementById('l-out-title').textContent = name;
@@ -570,6 +688,10 @@ function renderListing(l, name) {
     document.getElementById('panel-content').classList.add('active');
     document.querySelectorAll('.nav-tab')[2].classList.add('active');
     window.scrollTo(0, 0);
+  });
+
+  document.getElementById('publish-etsy-btn').addEventListener('click', function() {
+    publishToEtsy(name);
   });
 }
 
